@@ -1,0 +1,104 @@
+Sub PrepararEmails()
+' Definindo variáveis
+Dim wsComprador As Worksheet, wbFormulario As Workbook, wsFormulario As Worksheet
+Dim ultimaLinha As Long, linhaFormulario As Long, numeroPacotes As Integer
+Dim i As Integer, j As Integer, caminhoFormulario As String, caminhoPreparados As String, caminhoSalvar As String
+Dim pacoteDict As Object, pacoteAtual As Variant
+Dim OutlookApp As Object, OutlookMail As Object
+Dim emailFornecedores As String, primeiraLinha As Long
+' Definindo o caminho do formulário de cotação
+caminhoFormulario = "caminho_do_modelo"
+caminhoPreparados = "caminho_para_armazenar"
+' Definindo Worksheets
+Set wsComprador = ThisWorkbook.Sheets(1)
+' Definindo número de pacotes
+ultimaLinha = wsComprador.Cells(wsComprador.Rows.Count, "A").End(xlUp).Row
+Set pacoteDict = CreateObject("Scripting.Dictionary")
+numeroPacotes = 1
+For i = 2 To ultimaLinha
+If wsComprador.Cells(i, "Q").Value <> "Preparado" Then
+pacoteAtual = wsComprador.Cells(i, 1).Value
+If Not pacoteDict.exists(pacoteAtual) Then
+pacoteDict(pacoteAtual) = numeroPacotes
+numeroPacotes = numeroPacotes + 1
+End If
+End If
+Next i
+' Fazendo o processo para cada pacote
+Set OutlookApp = CreateObject("Outlook.Application")
+For Each pacoteAtual In pacoteDict.Keys
+' Criando um formulário por pacote
+Set wbFormulario = Workbooks.Open(caminhoFormulario)
+Set wsFormulario = wbFormulario.Sheets(1)
+DesprotegerPlanilha wsFormulario
+linhaFormulario = 17
+emailFornecedores = ""
+primeiraLinha = 0
+For j = 2 To ultimaLinha
+If wsComprador.Cells(j, 1).Value = pacoteAtual Then
+wsFormulario.Cells(linhaFormulario, 2).Value = wsComprador.Cells(j, 2).Value
+wsFormulario.Cells(linhaFormulario, 3).Value = wsComprador.Cells(j, 3).Value
+wsFormulario.Cells(linhaFormulario, 4).Value = wsComprador.Cells(j, 5).Value
+If wsComprador.Cells(j, 10).Value <> "" Then
+wsFormulario.Cells(linhaFormulario, 5).Value = wsComprador.Cells(j, 11).Value
+Else
+wsFormulario.Cells(linhaFormulario, 5).Value = wsComprador.Cells(j, 6).Value
+End If
+wsFormulario.Cells(linhaFormulario, 6).Value = wsComprador.Cells(j, 10).Value
+wsFormulario.Cells(linhaFormulario, 8).Value = wsComprador.Cells(j, 7).Value
+wsFormulario.Cells(linhaFormulario, 7).Value = wsComprador.Cells(j, 8).Value
+wsComprador.Cells(j, "Q").Value = "Preparado"
+If primeiraLinha = 0 Then primeiraLinha = j
+linhaFormulario = linhaFormulario + 1
+End If
+Next j
+wsFormulario.Cells(1, "L").Value = pacoteAtual
+' Coletando e-mails dos fornecedores
+For i = 1 To 5
+If wsComprador.Cells(primeiraLinha, 11 + i).Value <> "" Then
+emailFornecedores = emailFornecedores & wsComprador.Cells(primeiraLinha, 11 + i).Value & ";"
+End If
+Next i
+' Salvando e protegendo o formulário com os pacotes a serem enviados
+ProtegerPlanilha wsFormulario
+caminhoSalvar = caminhoPreparados & pacoteAtual & ".xlsx"
+wbFormulario.SaveAs Filename:=caminhoSalvar, FileFormat:=xlOpenXMLWorkbook
+wbFormulario.Close SaveChanges:=False
+' Montando e-mails a serem enviados
+Set OutlookMail = OutlookApp.CreateItem(0)
+With OutlookMail
+.To = "Compras_GEA_Brasil@gea.com"
+.CC = "Compras_GEA_Brasil@gea.com"
+.BCC = emailFornecedores
+.Subject = "Solicitação de cotação - " & pacoteAtual
+.HTMLBody = "Prezado fornecedor,<br><br>Gostaríamos da sua cotação para os itens presentes no arquivo em anexo.<br><br>Siga as instruções do documento e, em caso de dúvida, entre em contato.<br><br>Favor manter sempre em cópia o e-mail e-mail_compartilhado_aqui<br><br>Atenciosamente,"
+.Attachments.Add caminhoSalvar
+.Display
+End With
+Next pacoteAtual
+' Limpando objetos
+Set OutlookMail = Nothing
+Set OutlookApp = Nothing
+End Sub
+Sub ProtegerPlanilha(ws As Worksheet)
+Dim senha As String
+senha = "senha_aqui"
+' Protege com opções
+ws.Protect Password:=senha, _
+DrawingObjects:=True, _
+Contents:=True, _
+Scenarios:=True, _
+AllowFiltering:=True, _
+AllowSorting:=True, _
+AllowFormattingCells:=False, _
+AllowFormattingRows:=False, _
+AllowFormattingColumns:=False
+End Sub
+Sub DesprotegerPlanilha(ws As Worksheet)
+Dim senha As String
+senha = "senha_aqui"
+' Desprotege antes, para evitar erro se já estiver protegida
+On Error Resume Next
+ws.Unprotect Password:=senha
+On Error GoTo 0
+End Sub

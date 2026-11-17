@@ -1,0 +1,22 @@
+///// main:
+SAP.SapLogin.SapSSOLogInOptionMultiple Description: $'''sistema sap''' Client: $'''client''' Username: $'''usuário''' Language: $'''linguagem''' SapInstance=> ME5A
+Text.CropText.CropTextAfterFlag Text: ME5A.SessionId FromFlag: $'''[''' IgnoreCase: False CroppedText=> CroppedText
+Text.CropText.CropTextBeforeFlag Text: CroppedText ToFlag: $''']''' IgnoreCase: False CroppedText=> connection
+Text.CropText.CropTextBetweenFlags Text: CroppedText FromFlag: $'''[''' ToFlag: $''']''' IgnoreCase: False CroppedText=> session
+CALL 'ME5A'
+IF (UIAutomation.IfWindow.IsOpenByTitleClass Title: $'''EXPORT - Excel''' Class: $'''XLMAIN''' InstantCheck: False) THEN
+    Excel.Attach DocumentName: $'''EXPORT.xlsx''' Instance=> EXPORT
+    Excel.CloseExcel.CloseAndSave Instance: EXPORT
+END
+
+
+///// subfluxo ME5A:
+SAP.StartTransaction SapInstance: ME5A TransactionCode: $'''ME5A'''
+SAP.ClickSapGuiElement.BasicElementSelected SapInstance: ME5A ElementId: $'''wnd[0]/tbar[1]/btn[17]'''
+SAP.PopulateTextField SapInstance: ME5A ElementId: $'''wnd[1]/usr/txtV-LOW''' TextValue: $'''Relatório RC''' PopulateTextFieldMode: SAP.PopulateTextFieldMode.Replace
+SAP.ClickSapGuiElement.BasicElementSelected SapInstance: ME5A ElementId: $'''wnd[1]/tbar[0]/btn[8]'''
+SAP.ClickSapGuiElement.BasicElementSelected SapInstance: ME5A ElementId: $'''wnd[0]/tbar[1]/btn[8]'''
+SAP.ClickSapGuiElement.BasicElementSelected SapInstance: ME5A ElementId: $'''wnd[0]/tbar[1]/btn[43]'''
+SAP.PopulateTextField SapInstance: P30_ME5A ElementId: $'''wnd[1]/usr/ctxtDY_PATH''' TextValue: $'''caminho para salvar''' PopulateTextFieldMode: SAP.PopulateTextFieldMode.Replace
+SAP.PopulateTextField SapInstance: P30_ME5A ElementId: $'''wnd[1]/usr/ctxtDY_FILENAME''' TextValue: $'''EXPORT.XLSX''' PopulateTextFieldMode: SAP.PopulateTextFieldMode.Replace
+SAP.ClickSapGuiElement.BasicElementSelected SapInstance: P30_ME5A ElementId: $'''wnd[1]/tbar[0]/btn[11]'''
